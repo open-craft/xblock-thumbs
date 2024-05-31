@@ -2,15 +2,13 @@
 
 import logging
 
-import pkg_resources
-from web_fragments.fragment import Fragment
-from xblock.core import XBlock
+from xblock.core import XBlock, XBlock2
 from xblock.fields import Boolean, Integer, String, Scope
 
 log = logging.getLogger(__name__)
 
 
-class ThumbsBlock(XBlock):
+class ThumbsBlock(XBlock2):
     """
     An XBlock with thumbs-up/thumbs-down voting.
 
@@ -23,31 +21,6 @@ class ThumbsBlock(XBlock):
     upvotes = Integer(help="Number of up votes", default=0, scope=Scope.user_state_summary)
     downvotes = Integer(help="Number of down votes", default=0, scope=Scope.user_state_summary)
     voted = Boolean(help="Has this student voted?", default=False, scope=Scope.user_state)
-
-    def student_view(self, context=None):  # pylint: disable=W0613
-        """
-        Create a fragment used to display the XBlock to a student.
-        `context` is a dictionary used to configure the display (unused)
-
-        Returns a `Fragment` object specifying the HTML, CSS, and JavaScript
-        to display.
-        """
-
-        # Load the HTML fragment from within the package and fill in the template
-        html_str = pkg_resources.resource_string(__name__, "static/thumbs.html").decode('utf-8')
-        frag = Fragment(str(html_str).format(block=self))
-
-        # Load the CSS and JavaScript fragments from within the package
-        css_str = pkg_resources.resource_string(__name__, "static/thumbs.css").decode('utf-8')
-        frag.add_css(str(css_str))
-
-        js_str = pkg_resources.resource_string(__name__, "static/thumbs.js").decode('utf-8')
-        frag.add_javascript(str(js_str))
-
-        frag.initialize_js('ThumbsBlock')
-        return frag
-
-    problem_view = student_view
 
     @XBlock.json_handler
     def vote(self, data, suffix=''):  # pylint: disable=unused-argument
@@ -66,13 +39,13 @@ class ThumbsBlock(XBlock):
             return None
 
         if data['voteType'] == 'up':
-            self.upvotes += 1
+            self.upvotes += 1  # Would be cool to have atomic increment in the future
         else:
             self.downvotes += 1
 
         self.voted = True
 
-        return {'up': self.upvotes, 'down': self.downvotes}
+        # Returning the updated field values to the frontend is not necessary - the runtime handles it automagically!
 
     @staticmethod
     def workbench_scenarios():
